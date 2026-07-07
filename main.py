@@ -2,6 +2,19 @@ from fastapi import FastAPI, Request,HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+
+import mysql.connector
+mydb=mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="mysql",
+    database="TaskManager"
+)
+
+
+
+
+
 app=FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"),name="static")
@@ -14,14 +27,6 @@ origins=[
 class Task(BaseModel):
     title:str
 
-tasks = [
-
-{"id": 1, "title": "Study FastAPI", "completed": False},
-
-{"id": 2, "title": "Build a project", "completed": True},
-
-{"id": 3, "title": "Learn Football", "completed": False}
-]
 
 @app.get("/")
 def home(request:Request):
@@ -33,39 +38,63 @@ def home(request:Request):
 
 @app.get("/tasks")
 def get_tasks():
+    cursor=mydb.cursor(dictionary=True);
+    cursor.execute("select * from tasks")
+    tasks=cursor.fetchall()
+    cursor.close()
     return tasks
 
 @app.post("/tasks")
 def add_tasks(task:Task):
+    cursor=mydb.cursor()
+    query="Insert into tasks(title,completed) values(%s,%s)"
+    values=(task.title,False)
+    cursor.execute(query,values)
+    mydb.commit()
     new_task={
-        "id":max(task["id"] for task in tasks)+1 if len(tasks)!=0 else 1,
+        "id":cursor.lastrowid,
         "title":task.title,
         "completed":False
     }
-    tasks.append(new_task)
+    cursor.close()
     return new_task
 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id:int):
-    for idx,task in enumerate(tasks):
-        if(task["id"]==task_id):
-            deleted_task=tasks.pop(idx)
-            return deleted_task
-    raise HTTPException(
-        status_code=404,
-        detail="Task not Found"
-    )
+    cursor=mydb.cursor(dictionary=True)
+
+    query="Delete from tasks where id=%s";
+    cursor.execute(query,(task_id,))
+
+    if(cursor.rowcount==0):
+        cursor.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Task not Found"
+        )
+    mydb.commit()
+    cursor.close()
+    return {
+        "message":"Task Deleted Successfully"
+    }
 
 class UpdatedTask(BaseModel):
     completed:bool
 
 @app.put("/tasks/{task_id}")
 def update_task(task_id:int, updated_task:UpdatedTask):
-    for task in tasks:
-        if task["id"]==task_id:
-            task["completed"]= updated_task.completed
-            return task
-    raise HTTPException(
-        status_code=404,
-        detail="Task not Found"
-    )
+    cursor=mydb.cursor()
+    query="update tasks set completed=%s where id=%s"
+    values=(updated_task.completed,task_id)
+    cursor.execute(query,values)
+    if(cursor.rowcount==0):
+        cursor.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Task not Found"
+        )
+    mydb.commit()
+    cursor.close()
+    return{
+        "message":"Task updated Successfully"
+    }

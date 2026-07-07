@@ -2,13 +2,17 @@ from fastapi import FastAPI, Request,HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-
 import mysql.connector
-mydb=mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="mysql",
-    database="TaskManager"
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+mydb = mysql.connector.connect(
+    host=os.getenv("DB_HOST"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    database=os.getenv("DB_NAME"),
+    port=int(os.getenv("DB_PORT"))
 )
 
 

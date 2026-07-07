@@ -66,6 +66,12 @@ async function addTask() {
         alert("Please enter a task");
         return;
     }
+    console.log(title);
+    console.log(title.length);
+    if(title.length>99){
+        alert("⚠️Task length is too long!");
+        return;
+    }
     const response=await fetch("/tasks",{
         method:"Post",
         headers:{

@@ -23,10 +23,6 @@ app=FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"),name="static")
 templates=Jinja2Templates(directory="templates")
-origins=[
-    "http://127.0.0.1:51840",
-    "http://127.0.0.1:49425"
-]
 
 class Task(BaseModel):
     title:str

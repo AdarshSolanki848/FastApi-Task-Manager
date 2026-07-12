@@ -6,15 +6,19 @@ import mysql.connector
 import os
 from dotenv import load_dotenv
 load_dotenv()
+def get_db():
+    return mysql.connector.connect(
+        host=os.getenv("DB_HOST"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        port=int(os.getenv("DB_PORT"))
+    )
 
-mydb = mysql.connector.connect(
-    host=os.getenv("DB_HOST"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    database=os.getenv("DB_NAME"),
-    port=int(os.getenv("DB_PORT"))
-)
-
+print(os.getenv("DB_HOST"))
+print(os.getenv("DB_USER"))
+print(os.getenv("DB_NAME"))
+print(os.getenv("DB_PORT"))
 
 
 
@@ -38,6 +42,7 @@ def home(request:Request):
 
 @app.get("/tasks")
 def get_tasks():
+    mydb=get_db()
     cursor=mydb.cursor(dictionary=True);
     cursor.execute("select * from tasks")
     tasks=cursor.fetchall()
@@ -46,6 +51,7 @@ def get_tasks():
 
 @app.post("/tasks")
 def add_tasks(task:Task):
+    mydb=get_db()
     cursor=mydb.cursor()
     query="Insert into tasks(title,completed) values(%s,%s)"
     values=(task.title,False)
@@ -61,6 +67,7 @@ def add_tasks(task:Task):
 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id:int):
+    mydb=get_db()
     cursor=mydb.cursor(dictionary=True)
 
     query="Delete from tasks where id=%s";
@@ -83,6 +90,7 @@ class UpdatedTask(BaseModel):
 
 @app.put("/tasks/{task_id}")
 def update_task(task_id:int, updated_task:UpdatedTask):
+    mydb=get_db()
     cursor=mydb.cursor()
     query="update tasks set completed=%s where id=%s"
     values=(updated_task.completed,task_id)
